@@ -13,24 +13,28 @@ type Joke struct {
 	Joke string `json:"joke"`
 }
 
-func ToJokesMap(jokesArr []Joke, isFromApi bool) map[string]string {
-	res := make(map[string]string)
-	var prefix string
-
-	if isFromApi {
-		prefix = "API_"
-	}
+func ToArray(jokesArr []Joke) []string {
+	res := make([]string, 0, len(jokesArr))
 
 	for _, joke := range jokesArr {
-		res[prefix+joke.ID] = joke.Joke
+		res = append(res, joke.Joke)
 	}
 	return res
 }
 
-func Merge(jokes1 map[string]string, jokes2 map[string]string) map[string]string {
-	for k, v := range jokes2 {
-		jokes1[k] = v
+func Merge(jokes1 []string, jokes2 []string) map[int]string{
+	res := make(map[int]string)
+	ind := 0
+
+	for _, v := range jokes1 {
+		res[ind] = v
+		ind++
 	}
 
-	return jokes1
+	for _, v := range jokes2 {
+		res[ind] = v
+		ind++
+	}
+
+	return res
 }

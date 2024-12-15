@@ -1,12 +1,4 @@
-{
-    "jokes": [
-        {
-            "id": "1",
-            "joke": "hihi haha"
-        },
-        {
-            "id": "2",
-            "joke": "hoho hehe"
-        }
-    ]
-}
+[
+    "hihi haha",
+    "hehe hoho"
+]
