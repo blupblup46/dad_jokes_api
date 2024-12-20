@@ -1,40 +1,36 @@
 package utils
 
+
 type BatchResponse struct {
-	Results []Joke `json:"results"`
+	Results []Joke `json:"jokes"`
 }
 
-type CustomJokes struct {
+type JokesArr struct {
 	Jokes []Joke `json:"jokes"`
 }
 
 type Joke struct {
-	ID   string `json:"id"`
-	Joke string `json:"joke"`
+	ID 		 int
+	Setup    string `json:"setup"`
+	Delivery string `json:"delivery"`
 }
 
-func ToArray(jokesArr []Joke) []string {
-	res := make([]string, 0, len(jokesArr))
+func ToMap(jokesArr []Joke) map[int]Joke {
+
+	res := make(map[int]Joke)
 
 	for _, joke := range jokesArr {
-		res = append(res, joke.Joke)
+		res[joke.ID] = joke
 	}
+
 	return res
 }
 
-func Merge(jokes1 []string, jokes2 []string) map[int]string{
-	res := make(map[int]string)
-	ind := 0
-
-	for _, v := range jokes1 {
-		res[ind] = v
-		ind++
-	}
+func Merge(jokes1 map[int]Joke, jokes2 map[int]Joke) map[int]Joke {
 
 	for _, v := range jokes2 {
-		res[ind] = v
-		ind++
+		jokes1[v.ID] = v
 	}
 
-	return res
+	return jokes1
 }

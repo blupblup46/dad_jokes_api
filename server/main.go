@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+
 	"math/rand"
 	"net/http"
 	"os"
@@ -12,15 +13,34 @@ import (
 )
 
 const EXPOSED_PORT = "8080"
-const API_ROOT_URL = "https://icanhazdadjoke.com"
-const API_BATCH_SUFFIX = "/search"
+const API_URL = "https://v2.jokeapi.dev/joke/Programming?amount=10&type=twopart"
 
-var jokes map[int]string
+var jokes map[int]utils.Joke
 
 func main() {
-	go buildDadabase()
+	fetchApi := true
+
+	if os.Args[1] == "no-api" {
+		log.Println("Using previously fetch jokes.")
+		fetchApi = false
+	}
+
+	go buildDadabase(fetchApi)
 	buildHandlers()
 
+	log.Println(`
+		      ___           ___           ___           ___           ___                 
+		     /\__\         /\  \         /\__\         /\  \         /\  \          ___   
+		    /:/  /        /::\  \       /:/  /        /::\  \       /::\  \        /\  \  
+		   /:/__/        /:/\:\  \     /:/__/        /:/\:\  \     /:/\:\  \       \:\  \ 
+		  /::\  \ ___   /::\~\:\  \   /::\  \ ___   /::\~\:\  \   /::\~\:\  \      /::\__\
+		 /:/\:\  /\__\ /:/\:\ \:\__\ /:/\:\  /\__\ /:/\:\ \:\__\ /:/\:\ \:\__\  __/:/\/__/
+		 \/__\:\/:/  / \/__\:\/:/  / \/__\:\/:/  / \/__\:\/:/  / \/__\:\/:/  / /\/:/  /   
+		      \::/  /       \::/  /       \::/  /       \::/  /       \::/  /  \::/__/    
+		      /:/  /        /:/  /        /:/  /        /:/  /         \/__/    \:\__\    
+		     /:/  /        /:/  /        /:/  /        /:/  /                    \/__/    
+		     \/__/         \/__/         \/__/         \/__/                  (servor)
+		`)
 	log.Print("Listening on :", EXPOSED_PORT)
 	err := http.ListenAndServe(":"+EXPOSED_PORT, nil)
 	if err != nil {
@@ -35,7 +55,7 @@ func buildHandlers() {
 		jData, _ := json.Marshal(joke)
 		w.Header().Set("Content-Type", "application/json")
 		if _, err := w.Write(jData); err != nil {
-			log.Println("Could send response", err)
+			log.Println("Could not send response", err)
 		}
 	}
 
@@ -47,59 +67,76 @@ func buildHandlers() {
 		queryParams := r.URL.Query()
 		jokeID, _ := strconv.Atoi(queryParams.Get("id"))
 		joke := utils.Joke{
-			ID:   strconv.Itoa(jokeID),
-			Joke: jokes[jokeID],
+			ID:       jokeID,
+			Setup:    jokes[jokeID].Setup,
+			Delivery: jokes[jokeID].Delivery,
 		}
 		sendResponse(joke, w)
 	})
 
 	http.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
-		buildDadabase()
+		buildDadabase(true)
 		if _, err := w.Write([]byte("Dadabase ready !")); err != nil {
-			log.Println("Could send response", err)
+			log.Println("Could not send response", err)
 		}
 	})
 }
 
 func getRandomJoke() utils.Joke {
-	index := rand.Intn(len(jokes))
-	return utils.Joke{
-		ID:   strconv.Itoa(index),
-		Joke: jokes[index],
+	var keys []int
+	for key := range jokes {
+		keys = append(keys, key)
 	}
+
+	randomIndex := rand.Intn(len(keys))
+
+	randomKey := keys[randomIndex]
+	return jokes[randomKey]
 }
 
-func buildDadabase() {
-	jokes = utils.Merge(fetchApi(), getCustomJokes())
+func buildDadabase(resetApiFile bool) {
+	apiJokes := make(map[int]utils.Joke)
+
+	if resetApiFile {
+		apiJokes = fetchApi()
+	} else {
+		apiJokes = utils.ToMap(getJokesFromFile("./jokes/apiJokes.json"))
+	}
+
+	jokes = utils.Merge(apiJokes, getCustomJokes())
 	log.Println("Dadabase ready")
 }
 
-func getCustomJokes() []string {
-	var customJokes []string
+func getJokesFromFile(path string) []utils.Joke {
+	var jokesArr []utils.Joke
 
-	customJokesFile, err_openCustomJokesFile := os.Open("./jokes/customJokes.json")
+	customJokesFile, err_openCustomJokesFile := os.Open(path)
 	if err_openCustomJokesFile != nil {
-		log.Fatal("Could not open custom jokes file", err_openCustomJokesFile)
+		log.Fatal("Could not open file", err_openCustomJokesFile)
 	}
 
 	customJokesByte, err_readCustomJokesFile := io.ReadAll(customJokesFile)
 	if err_readCustomJokesFile != nil {
-		log.Fatal("Could not read custom jokes file", err_readCustomJokesFile)
+		log.Fatal("Could not read file", err_readCustomJokesFile)
 	}
 
-	err_deserializeCustomJokes := json.Unmarshal(customJokesByte, &customJokes)
+	err_deserializeCustomJokes := json.Unmarshal(customJokesByte, &jokesArr)
 	if err_deserializeCustomJokes != nil {
-		log.Fatal("Could not deserialize custom jokes file", err_deserializeCustomJokes)
+		log.Fatal("Could not deserialize file", err_deserializeCustomJokes)
 	}
 
-	return customJokes
+	return jokesArr
 }
 
-func fetchApi() []string {
+func getCustomJokes() map[int]utils.Joke {
+	return utils.ToMap(getJokesFromFile("./jokes/customJokes.json"))
+}
+
+func fetchApi() map[int]utils.Joke {
 	client := &http.Client{}
 	defer client.CloseIdleConnections()
 
-	req, _ := http.NewRequest("GET", API_ROOT_URL+API_BATCH_SUFFIX, nil)
+	req, _ := http.NewRequest("GET", API_URL, nil)
 	req.Header.Set("Accept", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -117,16 +154,15 @@ func fetchApi() []string {
 		log.Fatal("Could not deserialize JSON: ", err)
 	}
 
-	jokesArr := utils.ToArray(response.Results)
+	jokesArr := response.Results
 
 	JsonApiJokes, err_serializeApiJokes := json.Marshal(jokesArr)
-	if err_serializeApiJokes != nil{
+	if err_serializeApiJokes != nil {
 		log.Println("Could not serialize API jokes", err_serializeApiJokes)
 	}
 
-
 	APIJokesFile, err_createFile := os.Create("./jokes/API_jokes.json")
-	if err_createFile != nil{
+	if err_createFile != nil {
 		log.Println("Could not create API jokes file", err_createFile)
 	}
 
@@ -134,5 +170,5 @@ func fetchApi() []string {
 		log.Println("Could not write API jokes file", err_writeFile)
 	}
 
-	return jokesArr
+	return utils.ToMap(jokesArr)
 }
