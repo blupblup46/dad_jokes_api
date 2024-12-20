@@ -4,30 +4,22 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-
 	"math/rand"
 	"net/http"
 	"os"
 	"server/utils"
 	"strconv"
+
 )
 
 const EXPOSED_PORT = "8080"
 const API_URL = "https://v2.jokeapi.dev/joke/Programming?amount=10&type=twopart"
+const API_JOKES_PATH = "./jokes/apiJokes.json"
+const CUSTOM_JOKES_PATH = "./jokes/customJokes.json"
 
 var jokes map[int]utils.Joke
 
 func main() {
-	fetchApi := true
-
-	if os.Args[1] == "no-api" {
-		log.Println("Using previously fetch jokes.")
-		fetchApi = false
-	}
-
-	go buildDadabase(fetchApi)
-	buildHandlers()
-
 	log.Println(`
 		      ___           ___           ___           ___           ___                 
 		     /\__\         /\  \         /\__\         /\  \         /\  \          ___   
@@ -40,16 +32,34 @@ func main() {
 		      /:/  /        /:/  /        /:/  /        /:/  /         \/__/    \:\__\    
 		     /:/  /        /:/  /        /:/  /        /:/  /                    \/__/    
 		     \/__/         \/__/         \/__/         \/__/                  (servor)
-		`)
-	log.Print("Listening on :", EXPOSED_PORT)
-	err := http.ListenAndServe(":"+EXPOSED_PORT, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	`)
 
+	server, _ := CreateServer()
+	log.Print("Listening on :", EXPOSED_PORT)
+	server.ListenAndServe()
 }
 
-func buildHandlers() {
+func CreateServer() (*http.Server, *http.ServeMux ){
+	mux := http.NewServeMux()
+	fetchApi := true
+
+	if len(os.Args) > 1 && os.Args[1] == "no-api" {
+		log.Println("Using previously fetch jokes.")
+		fetchApi = false
+	}
+
+	go buildDadabase(fetchApi)
+	BuildHandlers(mux)
+
+	server := &http.Server{
+		Addr:    ":" + EXPOSED_PORT,
+		Handler: mux,
+	}
+
+	return server, mux
+}
+
+func BuildHandlers(muxServer *http.ServeMux) {
 
 	sendResponse := func(joke utils.Joke, w http.ResponseWriter) {
 		jData, _ := json.Marshal(joke)
@@ -59,30 +69,51 @@ func buildHandlers() {
 		}
 	}
 
-	http.HandleFunc("/random", func(w http.ResponseWriter, r *http.Request) {
-		sendResponse(getRandomJoke(), w)
+	muxServer.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte("Up")); err != nil {
+			log.Println("Could not send response", err)
+		}
 	})
 
-	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+	muxServer.HandleFunc("/random", func(w http.ResponseWriter, r *http.Request) {
+		sendResponse(GetRandomJoke(), w)
+	})
+
+	muxServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		queryParams := r.URL.Query()
 		jokeID, _ := strconv.Atoi(queryParams.Get("id"))
-		joke := utils.Joke{
-			ID:       jokeID,
-			Setup:    jokes[jokeID].Setup,
-			Delivery: jokes[jokeID].Delivery,
+		if _, exists := jokes[jokeID]; exists{
+			joke := utils.Joke{
+				ID:       jokeID,
+				Setup:    jokes[jokeID].Setup,
+				Delivery: jokes[jokeID].Delivery,
+			}
+			sendResponse(joke, w)
+		}else{
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("404 joke not found"))
+			return
 		}
-		sendResponse(joke, w)
+		
 	})
 
-	http.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+	muxServer.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
 		buildDadabase(true)
 		if _, err := w.Write([]byte("Dadabase ready !")); err != nil {
 			log.Println("Could not send response", err)
 		}
 	})
+
+	muxServer.HandleFunc("/all", func(w http.ResponseWriter, r *http.Request) {
+		jData, _ := json.Marshal(jokes)
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := w.Write(jData); err != nil {
+			log.Println("Could not send response", err)
+		}
+	})
 }
 
-func getRandomJoke() utils.Joke {
+func GetRandomJoke() utils.Joke {
 	var keys []int
 	for key := range jokes {
 		keys = append(keys, key)
@@ -100,14 +131,14 @@ func buildDadabase(resetApiFile bool) {
 	if resetApiFile {
 		apiJokes = fetchApi()
 	} else {
-		apiJokes = utils.ToMap(getJokesFromFile("./jokes/apiJokes.json"))
+		apiJokes = utils.ToMap(GetJokesFromFile(API_JOKES_PATH))
 	}
 
 	jokes = utils.Merge(apiJokes, getCustomJokes())
 	log.Println("Dadabase ready")
 }
 
-func getJokesFromFile(path string) []utils.Joke {
+func GetJokesFromFile(path string) []utils.Joke {
 	var jokesArr []utils.Joke
 
 	customJokesFile, err_openCustomJokesFile := os.Open(path)
@@ -129,7 +160,7 @@ func getJokesFromFile(path string) []utils.Joke {
 }
 
 func getCustomJokes() map[int]utils.Joke {
-	return utils.ToMap(getJokesFromFile("./jokes/customJokes.json"))
+	return utils.ToMap(GetJokesFromFile(CUSTOM_JOKES_PATH))
 }
 
 func fetchApi() map[int]utils.Joke {
@@ -161,7 +192,7 @@ func fetchApi() map[int]utils.Joke {
 		log.Println("Could not serialize API jokes", err_serializeApiJokes)
 	}
 
-	APIJokesFile, err_createFile := os.Create("./jokes/API_jokes.json")
+	APIJokesFile, err_createFile := os.Create(API_JOKES_PATH)
 	if err_createFile != nil {
 		log.Println("Could not create API jokes file", err_createFile)
 	}
