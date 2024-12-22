@@ -19,10 +19,10 @@
 
     <main>
         <article>
-            <form action="http://localhost:{{.port}}/joke?id=">
+            <form>
                 <p>ID de la blague</p>
-                <label for="joke-id">ID: <input type="text" name="joke-id"></label>
-                <input type="submit">Chercher
+                <label for="joke-id">ID: <input type="text" name="joke-id" id="joke-id"></label>
+                <input type="submit" onclick="goTo(event)">Chercher
             </form>
 
         </article>
@@ -30,12 +30,14 @@
     </main>
 </body>
 <script>
-    function unHide(){
-        var delivery = document.getElementById("delivery");
-        delivery.style.visibility = "visible";
+
+    function goTo(e){
+        e.preventDefault()
+        var jokeId = document.getElementById("joke-id");
+        var url = "http://localhost:{{.port}}/joke?id=" + jokeId.value;
+        window.location.assign(url);
     }
-    function reload(){
-        window.location.reload(true);
-    }
+
+    
 </script>
 </html>

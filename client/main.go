@@ -13,6 +13,9 @@ import (
 )
 
 const CONFIG_PATH = "config.json"
+const JOKE_TEMPLATE_PATH = "./html_files/joke.html"
+const RESET_TEMPALTE_PATH = "./html_files/reset.html"
+const SEARCH_TEMPLATE_PATH = "./html_files/search.html"
 var config utils.Config
 
 func main() {
@@ -37,6 +40,7 @@ func main() {
 }
 
 func loadConfig() utils.Config{
+
 	configFile, err_openConfigFile := os.Open(CONFIG_PATH)
 	if err_openConfigFile != nil {
 		log.Fatal("Could not open config file", err_openConfigFile)
@@ -70,6 +74,7 @@ func CreateServer() (*http.Server, *http.ServeMux ){
 
 
 func BuildHandlers(muxServer *http.ServeMux) {
+
 	muxServer.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		var joke utils.Joke
 		var statusCode int
@@ -85,17 +90,21 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		}
 
 		if statusCode == http.StatusNotFound {
-			log.Fatalf("Joke #%d not found", jokeId)
-		}
-		if statusCode != http.StatusOK {
+			log.Printf("Joke #%d not found\n", jokeId)
+			joke = utils.Joke{ID: 0, Setup: "Joke #"+strconv.Itoa(jokeId)+" not found", Delivery: ""}
+
+		}else if statusCode != http.StatusOK {
 			log.Fatal("Could not fetch API, status code:",statusCode)
 		}
+		
+		tmpl, err := template.ParseFiles(JOKE_TEMPLATE_PATH)
 
-		tmpl, err := template.ParseFiles("./html_files/joke.html")
 		if err != nil {
-			log.Fatal("Error parsing template ./html_files/joke.html")
+			log.Fatal("Error parsing template", JOKE_TEMPLATE_PATH)
 		}
-		tmpl.Execute(w, joke)
+		templateVars := map[string]any{"joke": joke, "port": config.ExposePort}
+		tmpl.Execute(w, templateVars)
+		
 	})
 
 	muxServer.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
@@ -107,12 +116,21 @@ func BuildHandlers(muxServer *http.ServeMux) {
 			resetMessage = "Could not reset jokes API dadabase"
 		}
 
-		tmpl, err := template.ParseFiles("./html_files/reset.html")
-		if err != nil {
-			log.Fatal("Error parsing template ./html_files/reset.html")
-		}
+		tmpl, err := template.ParseFiles(RESET_TEMPALTE_PATH)
 
+		if err != nil {
+			log.Fatal("Error parsing template", RESET_TEMPALTE_PATH)
+		}
 		tmpl.Execute(w, resetMessage)
+	})
+
+	muxServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		tmpl, err := template.ParseFiles(SEARCH_TEMPLATE_PATH)
+
+		if err != nil {
+			log.Fatal("Error parsing template", SEARCH_TEMPLATE_PATH)
+		}
+		tmpl.Execute(w, config.ExposePort)
 	})
 
 
@@ -142,14 +160,16 @@ func fetchApi(path string) (utils.Joke, int){
 	if err != nil {
 		log.Fatal("Could not read response from API: ", err)
 	}
-
 	var response utils.Joke
-	if err := json.Unmarshal(body, &response); err != nil {
-		log.Fatal("Could not deserialize JSON: ", err)
+
+
+	if resp.StatusCode == http.StatusOK{
+		if err := json.Unmarshal(body, &response); err != nil {
+			log.Fatal("Could not deserialize JSON: ", err)
+		}
 	}
-
+	
 	return response, resp.StatusCode
-
 }
 
 func resetRequest() int {

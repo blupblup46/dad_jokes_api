@@ -20,13 +20,13 @@
     <main>
         <article>
             <div>
-                <p>{{.Setup}}</p>
+                <p>{{.joke.Setup}}</p>
             </div>
             <div>
                 <button onclick="unHide()">Réponse</button>
             </div>
             <div id="delivery">
-                <p>{{.Delivery}}</p>
+                <p>{{.joke.Delivery}}</p>
             </div>
             <div>
                 <button onclick="reload()">Une autre</button>
@@ -42,7 +42,8 @@
         delivery.style.visibility = "visible";
     }
     function reload(){
-        window.location.reload(true);
+        var url = "http://localhost:{{.port}}/joke"
+        window.location.assign(url);
     }
 </script>
 </html>
