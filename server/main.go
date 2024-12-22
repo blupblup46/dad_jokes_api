@@ -9,7 +9,6 @@ import (
 	"os"
 	"server/utils"
 	"strconv"
-
 )
 
 const EXPOSED_PORT = "8080"
@@ -31,7 +30,7 @@ func main() {
 		      \::/  /       \::/  /       \::/  /       \::/  /       \::/  /  \::/__/    
 		      /:/  /        /:/  /        /:/  /        /:/  /         \/__/    \:\__\    
 		     /:/  /        /:/  /        /:/  /        /:/  /                    \/__/    
-		     \/__/         \/__/         \/__/         \/__/                  (servor)
+		     \/__/         \/__/         \/__/         \/__/                  (server)
 	`)
 
 	server, _ := CreateServer()
@@ -43,7 +42,7 @@ func CreateServer() (*http.Server, *http.ServeMux ){
 	mux := http.NewServeMux()
 	fetchApi := true
 
-	if len(os.Args) > 1 && os.Args[1] == "no-api" {
+	if len(os.Args) > 1 && os.Args[1] == "--no-api" {
 		log.Println("Using previously fetch jokes.")
 		fetchApi = false
 	}
@@ -101,6 +100,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		buildDadabase(true)
 		if _, err := w.Write([]byte("Dadabase ready !")); err != nil {
 			log.Println("Could not send response", err)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 	})
 

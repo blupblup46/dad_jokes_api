@@ -7,7 +7,7 @@
 - Génération de fichier JSON avec les données de API
 - Récup des blagues perso
 - fusion blagues perso/API 
-- go run main.go no-api (pas de requetes API)
+- go run main.go --no-api (pas de requetes API)
 
 # Client
 

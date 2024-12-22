@@ -1,0 +1,6 @@
+{
+    "api_url": "http://localhost",
+    "api_port": "8080",
+
+    "expose_port": "3000"
+}

@@ -1,0 +1,48 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #delivery{
+            border: 1px red solid;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="random"></div>
+        <div id="search"></div>
+        <div id="reset"></div>
+    </header>
+
+    <main>
+        <article>
+            <div>
+                <p>{{.Setup}}</p>
+            </div>
+            <div>
+                <button onclick="unHide()">Réponse</button>
+            </div>
+            <div id="delivery">
+                <p>{{.Delivery}}</p>
+            </div>
+            <div>
+                <button onclick="reload()">Une autre</button>
+
+            </div>
+        </article>
+
+    </main>
+</body>
+<script>
+    function unHide(){
+        var delivery = document.getElementById("delivery");
+        delivery.style.visibility = "visible";
+    }
+    function reload(){
+        window.location.reload(true);
+    }
+</script>
+</html>
