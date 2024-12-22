@@ -18,21 +18,25 @@
     </header>
 
     <main>
-        <article>
-            <div>
-                <p>{{.joke.Setup}}</p>
-            </div>
-            <div>
-                <button onclick="unHide()">Réponse</button>
-            </div>
-            <div id="delivery">
-                <p>{{.joke.Delivery}}</p>
-            </div>
-            <div>
-                <button onclick="reload()">Une autre</button>
-
-            </div>
-        </article>
+        <section>
+            <p>Joke id: {{.joke.ID}}</p>
+            <article>
+                <div>
+                    <p>{{.joke.Setup}}</p>
+                </div>
+                <div>
+                    <button onclick="unHide()">Réponse</button>
+                </div>
+                <div id="delivery">
+                    <p>{{.joke.Delivery}}</p>
+                </div>
+                <div>
+                    <button onclick="reload()">Une autre</button>
+    
+                </div>
+            </article>
+        </section>
+       
 
     </main>
 </body>

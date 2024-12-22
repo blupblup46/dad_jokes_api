@@ -34,7 +34,7 @@
     function goTo(e){
         e.preventDefault()
         var jokeId = document.getElementById("joke-id");
-        var url = "http://localhost:{{.port}}/joke?id=" + jokeId.value;
+        var url = "http://localhost:{{.}}/joke?id=" + jokeId.value;
         window.location.assign(url);
     }
 
