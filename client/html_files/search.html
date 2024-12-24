@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="style">
     <style>
         #delivery{
             border: 1px red solid;
@@ -12,20 +13,32 @@
 </head>
 <body>
     <header>
-        <div id="random"></div>
-        <div id="search"></div>
-        <div id="reset"></div>
+        <a href="http://localhost:{{.}}/joke">
+            <div>Blague</div>
+        </a>
+        <a href="http://localhost:{{.}}/search">
+            <div>Chercher</div>
+        </a>
+        <a href="http://localhost:{{.}}/reset">
+            <div>Renouveler</div>
+        </a>
+        <div>
+            <h1>hahAPI</h1>
+        </div>
     </header>
 
     <main>
-        <article>
-            <form>
-                <p>ID de la blague</p>
-                <label for="joke-id">ID: <input type="text" name="joke-id" id="joke-id"></label>
-                <input type="submit" onclick="goTo(event)">Chercher
-            </form>
-
-        </article>
+        <section>
+            <article>
+                <form>
+                    <p>Chercher</p>
+                    <label for="joke-id">ID: <input type="text" name="joke-id" id="joke-id"></label>
+                    <input type="submit" onclick="goTo(event)" value="Chercher">
+                </form>
+    
+            </article>
+        </section>
+       
 
     </main>
 </body>

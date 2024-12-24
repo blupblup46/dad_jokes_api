@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="style">
     <style>
         #delivery{
             border: 1px red solid;
@@ -12,13 +13,28 @@
 </head>
 <body>
     <header>
-        <div id="random"></div>
-        <div id="search"></div>
-        <div id="reset"></div>
+        <a href="http://localhost:{{.port}}/joke">
+            <div>Blague</div>
+        </a>
+        <a href="http://localhost:{{.port}}/search">
+            <div>Chercher</div>
+        </a>
+        <a href="http://localhost:{{.port}}/reset">
+            <div>Renouveler</div>
+        </a>
+        <div>
+            <h1>hahAPI</h1>
+        </div>
     </header>
 
     <main>
-        <p>{{.}}</p>
+        <section>
+            <article>
+                <div>
+                    <p>{{.resetMessage}}</p>
+                </div>
+            </article>
+        </section>
     </main>
 </body>
 </html>

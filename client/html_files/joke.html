@@ -1,20 +1,26 @@
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <style>
-        #delivery{
-            border: 1px red solid;
-            visibility: hidden;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style">
 </head>
+
 <body>
     <header>
-        <div id="random"></div>
-        <div id="search"></div>
-        <div id="reset"></div>
+        <a href="http://localhost:{{.port}}/joke">
+            <div>Blague</div>
+        </a>
+        <a href="http://localhost:{{.port}}/search">
+            <div>Chercher</div>
+        </a>
+        <a href="http://localhost:{{.port}}/reset">
+            <div>Renouveler</div>
+        </a>
+        <div>
+            <h1>hahAPI</h1>
+        </div>
     </header>
 
     <main>
@@ -32,22 +38,23 @@
                 </div>
                 <div>
                     <button onclick="reload()">Une autre</button>
-    
+
                 </div>
             </article>
         </section>
-       
+
 
     </main>
 </body>
 <script>
-    function unHide(){
+    function unHide() {
         var delivery = document.getElementById("delivery");
         delivery.style.visibility = "visible";
     }
-    function reload(){
+    function reload() {
         var url = "http://localhost:{{.port}}/joke"
         window.location.assign(url);
     }
 </script>
+
 </html>

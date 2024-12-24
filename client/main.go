@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"text/template"
 )
@@ -16,6 +17,7 @@ const CONFIG_PATH = "config.json"
 const JOKE_TEMPLATE_PATH = "./html_files/joke.html"
 const RESET_TEMPALTE_PATH = "./html_files/reset.html"
 const SEARCH_TEMPLATE_PATH = "./html_files/search.html"
+
 var config utils.Config
 
 func main() {
@@ -32,14 +34,17 @@ func main() {
 		     /:/  /        /:/  /        /:/  /        /:/  /                    \/__/    
 		     \/__/         \/__/         \/__/         \/__/                  (client)
 	`)
+
 	loadConfig()
 	fmt.Println(config)
 	server, _ := CreateServer()
 	log.Print("Listening on :", config.ExposePort)
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Could not start server at port %s, %s", config.ExposePort, err)
+	}
 }
 
-func loadConfig() utils.Config{
+func loadConfig() utils.Config {
 
 	configFile, err_openConfigFile := os.Open(CONFIG_PATH)
 	if err_openConfigFile != nil {
@@ -48,18 +53,18 @@ func loadConfig() utils.Config{
 
 	configByte, err_readConfigFile := io.ReadAll(configFile)
 	if err_readConfigFile != nil {
-		log.Fatal("Could not read file", err_readConfigFile)
+		log.Fatal("Could not read config file", err_readConfigFile)
 	}
 
 	err_deserializeConfig := json.Unmarshal(configByte, &config)
 	if err_deserializeConfig != nil {
-		log.Fatal("Could not deserialize file", err_deserializeConfig)
+		log.Fatal("Could not deserialize config file", err_deserializeConfig)
 	}
 
 	return config
 }
 
-func CreateServer() (*http.Server, *http.ServeMux ){
+func CreateServer() (*http.Server, *http.ServeMux) {
 	mux := http.NewServeMux()
 
 	BuildHandlers(mux)
@@ -72,8 +77,17 @@ func CreateServer() (*http.Server, *http.ServeMux ){
 	return server, mux
 }
 
-
 func BuildHandlers(muxServer *http.ServeMux) {
+	// muxServer.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	// muxServer.Handle("/", http.FileServer(http.Dir("html_file")))
+
+	muxServer.HandleFunc("/style", func(w http.ResponseWriter, r *http.Request) {
+		// Define the specific file you want to serve
+		filePath := filepath.Join("./html_files/style.css")
+
+		// Serve the file
+		http.ServeFile(w, r, filePath)
+	})
 
 	muxServer.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		var joke utils.Joke
@@ -82,29 +96,28 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		queryParams := r.URL.Query()
 		jokeId, _ := strconv.Atoi(queryParams.Get("id"))
 
-		if jokeId == 0{
+		if jokeId == 0 {
 			joke, statusCode = fetchApi("/random")
-		}else{
+		} else {
 			path := fmt.Sprint("/search?id=", jokeId)
 			joke, statusCode = fetchApi(path)
 		}
 
 		if statusCode == http.StatusNotFound {
 			log.Printf("Joke #%d not found\n", jokeId)
-			joke = utils.Joke{ID: 0, Setup: "Joke #"+strconv.Itoa(jokeId)+" not found", Delivery: ""}
+			joke = utils.Joke{ID: 0, Setup: "Joke #" + strconv.Itoa(jokeId) + " not found", Delivery: ""}
 
-		}else if statusCode != http.StatusOK {
-			log.Fatal("Could not fetch API, status code:",statusCode)
+		} else if statusCode != http.StatusOK {
+			log.Fatal("Could not fetch API, status code:", statusCode)
 		}
-		
-		tmpl, err := template.ParseFiles(JOKE_TEMPLATE_PATH)
 
+		tmpl, err := template.ParseFiles(JOKE_TEMPLATE_PATH)
 		if err != nil {
 			log.Fatal("Error parsing template", JOKE_TEMPLATE_PATH)
 		}
 		templateVars := map[string]any{"joke": joke, "port": config.ExposePort}
 		tmpl.Execute(w, templateVars)
-		
+
 	})
 
 	muxServer.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +125,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 
 		resetMessage := "Dadabase reseted !"
 		if statusCode != http.StatusOK {
-			log.Fatal("Could not reset jokes API dadabase, status code:",statusCode)
+			log.Fatal("Could not reset jokes API dadabase, status code:", statusCode)
 			resetMessage = "Could not reset jokes API dadabase"
 		}
 
@@ -121,7 +134,9 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		if err != nil {
 			log.Fatal("Error parsing template", RESET_TEMPALTE_PATH)
 		}
-		tmpl.Execute(w, resetMessage)
+
+		templateVars := map[string]any{"resetMessage": resetMessage, "port": config.ExposePort}
+		tmpl.Execute(w, templateVars)
 	})
 
 	muxServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
@@ -130,16 +145,15 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		if err != nil {
 			log.Fatal("Error parsing template", SEARCH_TEMPLATE_PATH)
 		}
+
 		tmpl.Execute(w, config.ExposePort)
 	})
 
-
 }
 
-func getRequest(url string) *http.Response{
+func getRequest(url string) *http.Response {
 	client := &http.Client{}
 	defer client.CloseIdleConnections()
-
 
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("Accept", "application/json")
@@ -151,7 +165,7 @@ func getRequest(url string) *http.Response{
 	return resp
 }
 
-func fetchApi(path string) (utils.Joke, int){
+func fetchApi(path string) (utils.Joke, int) {
 	url := fmt.Sprintf("%s:%s%s", config.ApiUrl, config.ApiPort, path)
 	resp := getRequest(url)
 	defer resp.Body.Close()
@@ -162,13 +176,12 @@ func fetchApi(path string) (utils.Joke, int){
 	}
 	var response utils.Joke
 
-
-	if resp.StatusCode == http.StatusOK{
+	if resp.StatusCode == http.StatusOK {
 		if err := json.Unmarshal(body, &response); err != nil {
 			log.Fatal("Could not deserialize JSON: ", err)
 		}
 	}
-	
+
 	return response, resp.StatusCode
 }
 

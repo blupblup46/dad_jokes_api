@@ -16,3 +16,5 @@
 - /getJokes               -> toutes les blagues
 
 - /initJokes              -> fait appel API et reset fichier JSON de blagues + régénére map de blagues fusionnées
+
+remplace log.fatal par http.Error
