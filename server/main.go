@@ -59,8 +59,13 @@ func CreateServer() (*http.Server, *http.ServeMux ){
 	return server, mux
 }
 
+/*
+Build handlers
+muxServer: the server to attacch handlers to
+*/
 func BuildHandlers(muxServer *http.ServeMux) {
 
+	// sends a joke through a writter 
 	sendResponse := func(joke utils.Joke, w http.ResponseWriter) {
 		jData, _ := json.Marshal(joke)
 		w.Header().Set("Content-Type", "application/json")
@@ -69,16 +74,19 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		}
 	}
 
+	// endpoint to check server health, 200 OK = healthy
 	muxServer.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("Up")); err != nil {
 			logErr.Println("Could not send response", err)
 		}
 	})
 
+	// returns a random joke through writer
 	muxServer.HandleFunc("/random", func(w http.ResponseWriter, r *http.Request) {
 		sendResponse(GetRandomJoke(), w)
 	})
 
+	// search a joke with ID, returns 404 not found if no joke have ID
 	muxServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		queryParams := r.URL.Query()
 		jokeID, _ := strconv.Atoi(queryParams.Get("id"))
@@ -97,6 +105,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		
 	})
 
+	// makes a call to the joke API and rebuild the joke dadabase
 	muxServer.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
 		buildDadabase(true)
 		if _, err := w.Write([]byte("Dadabase ready !")); err != nil {
@@ -105,6 +114,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		}
 	})
 
+	// return all the jokes from the dadabase
 	muxServer.HandleFunc("/all", func(w http.ResponseWriter, r *http.Request) {
 		jData, _ := json.Marshal(jokes)
 		w.Header().Set("Content-Type", "application/json")
@@ -126,6 +136,8 @@ func GetRandomJoke() utils.Joke {
 	return jokes[randomKey]
 }
 
+// calls the joke API, reads the custom joke file and merges the two files
+// resetApiFile = if true, reset API jokes file with freshly fetched jokes. If false, use existing jokes from API joke file
 func buildDadabase(resetApiFile bool) {
 	apiJokes := make(map[int]utils.Joke)
 
@@ -139,6 +151,9 @@ func buildDadabase(resetApiFile bool) {
 	log.Println("Dadabase ready")
 }
 
+
+// read the jokes from both custom jokes file and API file 
+// path = path to the joke file
 func GetJokesFromFile(path string) []utils.Joke {
 	var jokesArr []utils.Joke
 

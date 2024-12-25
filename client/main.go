@@ -45,6 +45,7 @@ func main() {
 	}
 }
 
+// load config from the config.json file
 func loadConfig() utils.Config {
 
 	configFile, err_openConfigFile := os.Open(CONFIG_PATH)
@@ -89,15 +90,25 @@ func CreateServer() (*http.Server, *http.ServeMux) {
 	return server, mux
 }
 
+/*
+Build handlers
+muxServer: the server to attacch handlers to
+*/
 func BuildHandlers(muxServer *http.ServeMux) {
+
+	// serve the css file for html. Probably not the correct way to do that
 	muxServer.HandleFunc("/style", func(w http.ResponseWriter, r *http.Request) {
 		filePath := filepath.Join("./html_files/style.css")
 		http.ServeFile(w, r, filePath)
 	})
+
+	// convenience endpoint that redirect to /joke
 	muxServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://localhost:"+config.ExposePort+"/joke", http.StatusMovedPermanently)
 	})
 	
+	// Serves a html template filled with a random joke from the server
+	// With parameter ?id=[id], serves a html template filled with the joke with id from the server.
 	muxServer.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		var joke utils.Joke
 		var statusCode int
@@ -129,6 +140,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 
 	})
 
+	//Makes a call for /reset at server API
 	muxServer.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
 		statusCode := resetRequest()
 
@@ -149,6 +161,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		tmpl.Execute(w, templateVars)
 	})
 
+	// Serves a html template with a form to make a server API call at /search?id=[filled id].
 	muxServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		tmpl, err := template.ParseFiles(SEARCH_TEMPLATE_PATH)
 
@@ -161,6 +174,8 @@ func BuildHandlers(muxServer *http.ServeMux) {
 
 }
 
+// makes a http get request at url
+// url = the server to fetch
 func getRequest(url string) *http.Response {
 	client := &http.Client{}
 	defer client.CloseIdleConnections()
@@ -178,6 +193,8 @@ func getRequest(url string) *http.Response {
 	return resp
 }
 
+// fetch the server API 
+// path = path to fetch (/joke, /reset, ...)
 func fetchApi(path string) (utils.Joke, int) {
 	url := fmt.Sprintf("%s:%s%s", config.ApiUrl, config.ApiPort, path)
 	log.Println(url)
@@ -199,6 +216,7 @@ func fetchApi(path string) (utils.Joke, int) {
 	return response, resp.StatusCode
 }
 
+// makes a call at /reset endpoint at server API
 func resetRequest() int {
 	url := fmt.Sprintf("%s:%s%s", config.ApiUrl, config.ApiPort, "/reset")
 	resp := getRequest(url)
