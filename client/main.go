@@ -70,6 +70,10 @@ func loadConfig() utils.Config {
 		config.ApiPort = os.Getenv("API_PORT")
 	}
 
+	if os.Getenv("CLIENT_PORT")!=""{
+		config.ExposePort = os.Getenv("CLIENT_PORT")
+	}
+
 	return config
 }
 
@@ -90,7 +94,10 @@ func BuildHandlers(muxServer *http.ServeMux) {
 		filePath := filepath.Join("./html_files/style.css")
 		http.ServeFile(w, r, filePath)
 	})
-
+	muxServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://localhost:"+config.ExposePort+"/joke", http.StatusMovedPermanently)
+	})
+	
 	muxServer.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		var joke utils.Joke
 		var statusCode int
