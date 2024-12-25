@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -37,7 +38,6 @@ func main() {
 	`)
 
 	loadConfig()
-	fmt.Println(config)
 	server, _ := CreateServer()
 	log.Print("Listening on :", config.ExposePort)
 	if err := server.ListenAndServe(); err != nil {
@@ -50,16 +50,24 @@ func loadConfig() utils.Config {
 	configFile, err_openConfigFile := os.Open(CONFIG_PATH)
 	if err_openConfigFile != nil {
 		logErr.Print("Could not open config file", err_openConfigFile)
+	}else{
+		configByte, err_readConfigFile := io.ReadAll(configFile)
+		if err_readConfigFile != nil {
+			logErr.Print("Could not read config file", err_readConfigFile)
+		}
+	
+		err_deserializeConfig := json.Unmarshal(configByte, &config)
+		if err_deserializeConfig != nil {
+			logErr.Print("Could not deserialize config file", err_deserializeConfig)
+		}
 	}
 
-	configByte, err_readConfigFile := io.ReadAll(configFile)
-	if err_readConfigFile != nil {
-		logErr.Print("Could not read config file", err_readConfigFile)
+	if os.Getenv("API_URL")!=""{
+		config.ApiUrl = os.Getenv("API_URL")
 	}
-
-	err_deserializeConfig := json.Unmarshal(configByte, &config)
-	if err_deserializeConfig != nil {
-		logErr.Print("Could not deserialize config file", err_deserializeConfig)
+	
+	if os.Getenv("API_PORT")!=""{
+		config.ApiPort = os.Getenv("API_PORT")
 	}
 
 	return config
@@ -67,11 +75,10 @@ func loadConfig() utils.Config {
 
 func CreateServer() (*http.Server, *http.ServeMux) {
 	mux := http.NewServeMux()
-
 	BuildHandlers(mux)
 
 	server := &http.Server{
-		Addr:    ":" + config.ExposePort,
+		Addr:    ":" +  config.ExposePort,
 		Handler: mux,
 	}
 
@@ -151,7 +158,10 @@ func getRequest(url string) *http.Response {
 	client := &http.Client{}
 	defer client.CloseIdleConnections()
 
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, strings.NewReader(""))
+	if err != nil {
+		logErr.Print("Error creating request: ", err)
+	}
 	req.Header.Set("Accept", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -163,6 +173,7 @@ func getRequest(url string) *http.Response {
 
 func fetchApi(path string) (utils.Joke, int) {
 	url := fmt.Sprintf("%s:%s%s", config.ApiUrl, config.ApiPort, path)
+	log.Println(url)
 	resp := getRequest(url)
 	defer resp.Body.Close()
 

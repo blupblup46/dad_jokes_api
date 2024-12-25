@@ -1,0 +1,22 @@
+services:
+
+  back:
+    build: ./server/.
+    expose:
+      - 8080
+    networks:
+      - backbone
+
+  front:
+    build: ./client/.
+    ports:
+      - 3000:3000 # due to misconceptions, the host and docker port must be the same
+    environment:
+      - API_PORT=8080
+      - API_URL=http://back
+
+    networks:
+      - backbone
+
+networks:
+  backbone:
