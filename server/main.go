@@ -36,10 +36,13 @@ func main() {
 
 	server, _ := CreateServer()
 	log.Print("Listening on :", EXPOSED_PORT)
-	server.ListenAndServe()
+
+	if err := server.ListenAndServe(); err != nil {
+		logErr.Printf("Could not start server at port %s, %s", EXPOSED_PORT, err)
+	}
 }
 
-func CreateServer() (*http.Server, *http.ServeMux ){
+func CreateServer() (*http.Server, *http.ServeMux) {
 	mux := http.NewServeMux()
 	fetchApi := true
 
@@ -65,7 +68,7 @@ muxServer: the server to attacch handlers to
 */
 func BuildHandlers(muxServer *http.ServeMux) {
 
-	// sends a joke through a writter 
+	// sends a joke through a writter
 	sendResponse := func(joke utils.Joke, w http.ResponseWriter) {
 		jData, _ := json.Marshal(joke)
 		w.Header().Set("Content-Type", "application/json")
@@ -77,7 +80,7 @@ func BuildHandlers(muxServer *http.ServeMux) {
 	// endpoint to check server health, 200 OK = healthy
 	muxServer.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("Up")); err != nil {
-			logErr.Println("Could not send response", err)
+			logErr.Println("Server is unhealthy", err)
 		}
 	})
 
@@ -90,19 +93,18 @@ func BuildHandlers(muxServer *http.ServeMux) {
 	muxServer.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		queryParams := r.URL.Query()
 		jokeID, _ := strconv.Atoi(queryParams.Get("id"))
-		if _, exists := jokes[jokeID]; exists{
+		if _, exists := jokes[jokeID]; exists {
 			joke := utils.Joke{
 				ID:       jokeID,
 				Setup:    jokes[jokeID].Setup,
 				Delivery: jokes[jokeID].Delivery,
 			}
 			sendResponse(joke, w)
-		}else{
+		} else {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("404 joke not found"))
-			return
 		}
-		
+
 	})
 
 	// makes a call to the joke API and rebuild the joke dadabase
@@ -151,25 +153,28 @@ func buildDadabase(resetApiFile bool) {
 	log.Println("Dadabase ready")
 }
 
-
-// read the jokes from both custom jokes file and API file 
+// read the jokes from both custom jokes file and API file
 // path = path to the joke file
 func GetJokesFromFile(path string) []utils.Joke {
 	var jokesArr []utils.Joke
-
 	customJokesFile, err_openCustomJokesFile := os.Open(path)
+
 	if err_openCustomJokesFile != nil {
 		logErr.Println("Could not open file", err_openCustomJokesFile)
-	}
 
-	customJokesByte, err_readCustomJokesFile := io.ReadAll(customJokesFile)
-	if err_readCustomJokesFile != nil {
-		logErr.Println("Could not read file", err_readCustomJokesFile)
-	}
+	} else {
+		customJokesByte, err_readCustomJokesFile := io.ReadAll(customJokesFile)
 
-	err_deserializeCustomJokes := json.Unmarshal(customJokesByte, &jokesArr)
-	if err_deserializeCustomJokes != nil {
-		logErr.Println("Could not deserialize file", err_deserializeCustomJokes)
+		if err_readCustomJokesFile != nil {
+			logErr.Println("Could not read file", err_readCustomJokesFile)
+
+		} else {
+			err_deserializeCustomJokes := json.Unmarshal(customJokesByte, &jokesArr)
+
+			if err_deserializeCustomJokes != nil {
+				logErr.Println("Could not deserialize file", err_deserializeCustomJokes)
+			}
+		}
 	}
 
 	return jokesArr

@@ -66,7 +66,7 @@ func TestSearchJoke(t *testing.T) {
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
-	
+
 	buildDadabase(false)
 	joke := GetRandomJoke()
 
@@ -74,10 +74,10 @@ func TestSearchJoke(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 
-	if err != nil{
+	if err != nil {
 		t.Fatal("Could not read response from API: ", err)
 	}
-	if resp.StatusCode == http.StatusNotFound{
+	if resp.StatusCode == http.StatusNotFound {
 		t.Fatalf("Joke #%s not found", strconv.Itoa(joke.ID))
 	}
 
@@ -86,22 +86,21 @@ func TestSearchJoke(t *testing.T) {
 		t.Fatal("Could not deserialize JSON: ", err)
 	}
 
-	if serverJoke.ID != joke.ID{
+	if serverJoke.ID != joke.ID {
 		t.Error("joke from file and joke from server are not the same")
 	}
 
 }
 
+func TestDatabaseReset(t *testing.T) {
 
-func TestDatabaseReset(t *testing.T){
-
-	getAllJokes := func(ts *httptest.Server)(map[int]utils.Joke){
+	getAllJokes := func(ts *httptest.Server) map[int]utils.Joke {
 		resp, err := http.Get(ts.URL + "/all")
 
 		body, err := io.ReadAll(resp.Body)
 		defer resp.Body.Close()
-	
-		if err != nil{
+
+		if err != nil {
 			t.Fatal("Could not read response from API: ", err)
 		}
 		var serverJokes map[int]utils.Joke

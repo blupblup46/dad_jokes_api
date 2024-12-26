@@ -4,8 +4,9 @@ Docker or go (v1.22.2)
 
 # How does it work
 
-At startup, the backend server makes a call to the joke API and stores the result in a file at `server/jokes/apiJokes.json`.
-Then, jokes from the API joke and custom jokes from `server/jokes/customJokes.json` are merged. If the two files have a joke fo same ID, the joke from the custom joke file will overwrite the one from the API joke.
+At startup, the backend server makes a call to the joke API (https://v2.jokeapi.dev/) and stores the result in a file at `server/jokes/apiJokes.json`.
+You can add your own jokes at `server/jokes/customJokes.json`. `server/jokes/apiJokes.json` is bound to change, do not add jokes here
+Then, jokes from the API joke and custom jokes are merged. If the two files have a joke of same ID, the joke from the custom joke file will overwrite the one from the API joke.
 
 # Startup
 

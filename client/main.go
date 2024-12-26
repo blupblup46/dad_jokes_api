@@ -51,27 +51,27 @@ func loadConfig() utils.Config {
 	configFile, err_openConfigFile := os.Open(CONFIG_PATH)
 	if err_openConfigFile != nil {
 		logErr.Print("Could not open config file", err_openConfigFile)
-	}else{
+	} else {
 		configByte, err_readConfigFile := io.ReadAll(configFile)
 		if err_readConfigFile != nil {
 			logErr.Print("Could not read config file", err_readConfigFile)
-		}
-	
-		err_deserializeConfig := json.Unmarshal(configByte, &config)
-		if err_deserializeConfig != nil {
-			logErr.Print("Could not deserialize config file", err_deserializeConfig)
+		} else {
+			err_deserializeConfig := json.Unmarshal(configByte, &config)
+			if err_deserializeConfig != nil {
+				logErr.Print("Could not deserialize config file", err_deserializeConfig)
+			}
 		}
 	}
 
-	if os.Getenv("API_URL")!=""{
+	if os.Getenv("API_URL") != "" {
 		config.ApiUrl = os.Getenv("API_URL")
 	}
-	
-	if os.Getenv("API_PORT")!=""{
+
+	if os.Getenv("API_PORT") != "" {
 		config.ApiPort = os.Getenv("API_PORT")
 	}
 
-	if os.Getenv("CLIENT_PORT")!=""{
+	if os.Getenv("CLIENT_PORT") != "" {
 		config.ExposePort = os.Getenv("CLIENT_PORT")
 	}
 
@@ -83,7 +83,7 @@ func CreateServer() (*http.Server, *http.ServeMux) {
 	BuildHandlers(mux)
 
 	server := &http.Server{
-		Addr:    ":" +  config.ExposePort,
+		Addr:    ":" + config.ExposePort,
 		Handler: mux,
 	}
 
@@ -106,9 +106,10 @@ func BuildHandlers(muxServer *http.ServeMux) {
 	muxServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://localhost:"+config.ExposePort+"/joke", http.StatusMovedPermanently)
 	})
-	
+
 	// Serves a html template filled with a random joke from the server
 	// With parameter ?id=[id], serves a html template filled with the joke with id from the server.
+	// If id = 0, serves a random joke
 	muxServer.HandleFunc("/joke", func(w http.ResponseWriter, r *http.Request) {
 		var joke utils.Joke
 		var statusCode int
@@ -122,10 +123,10 @@ func BuildHandlers(muxServer *http.ServeMux) {
 			path := fmt.Sprint("/search?id=", jokeId)
 			joke, statusCode = fetchApi(path)
 		}
+
 		if statusCode == http.StatusNotFound {
 			logErr.Printf("Joke #%d not found\n", jokeId)
 			joke = utils.Joke{ID: -1, Setup: "Joke #" + strconv.Itoa(jokeId) + " not found", Delivery: ""}
-
 		} else if statusCode != http.StatusOK {
 			logErr.Print("Could not fetch API, status code:", statusCode)
 			joke = utils.Joke{ID: -1, Setup: "Could not fetch API", Delivery: ""}
@@ -193,7 +194,7 @@ func getRequest(url string) *http.Response {
 	return resp
 }
 
-// fetch the server API 
+// fetch the server API
 // path = path to fetch (/joke, /reset, ...)
 func fetchApi(path string) (utils.Joke, int) {
 	url := fmt.Sprintf("%s:%s%s", config.ApiUrl, config.ApiPort, path)

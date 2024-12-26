@@ -1,6 +1,5 @@
 package utils
 
-
 type BatchResponse struct {
 	Results []Joke `json:"jokes"`
 }
@@ -10,7 +9,7 @@ type JokesArr struct {
 }
 
 type Joke struct {
-	ID 		 int
+	ID       int
 	Setup    string `json:"setup"`
 	Delivery string `json:"delivery"`
 }
@@ -28,7 +27,7 @@ func ToMap(jokesArr []Joke) map[int]Joke {
 	return res
 }
 
-// merge to jokes map, 
+// merge to jokes map,
 // if the joke from the second map has an ID existing in the first map, the joke in the second map will override the joke in the first map
 func Merge(jokes1 map[int]Joke, jokes2 map[int]Joke) map[int]Joke {
 
